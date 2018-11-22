@@ -18,12 +18,12 @@ Notas
 interfaz del API TWITTER
 ========================
 
-/api/login_check --> para autentificar al usuario
+- /api/login_check --> para autentificar al usuario
 
-/api/buscar/usuario_alias/ --> para buscar todos los tweets del usuario
-/api/buscar/usuario_alias/id --> para buscar el tweet "id" del usuario
-/api/buscar/N/usuario_alias/n --> para buscar los últimos n tweets del usuario
+- /api/buscar/usuario_alias/ --> para buscar todos los tweets del usuario
+- /api/buscar/usuario_alias/id --> para buscar el tweet "id" del usuario
+- /api/buscar/N/usuario_alias/n --> para buscar los últimos n tweets del usuario
 
-/api/enviar/usuario_alias/texto --> para enviar un nuevo tweet a nombre de usuario
+- /api/enviar/usuario_alias/texto --> para enviar un nuevo tweet a nombre de usuario
 
-/api/eliminar/usuario_alias/id --> para eliminar el tweet id del usuario
+- /api/eliminar/usuario_alias/id --> para eliminar el tweet id del usuario
