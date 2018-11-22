@@ -13,6 +13,11 @@ DirectoryIndex app.php
 
 # Disabling MultiViews prevents unwanted negotiation, e.g. "/app" should not resolve
 # to the front controller "/app.php" but be rewritten to "/app.php/app".
+
+RewriteCond %{HTTP:Authorization} ^(.*)
+RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+
 <IfModule mod_negotiation.c>
     Options -MultiViews
 </IfModule>

@@ -2,8 +2,6 @@
 
 namespace AppBundle\Controller;
 
-//require "../vendor/autoload.php";
-
 use Abraham\TwitterOAuth\TwitterOAuth;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\Config\Definition\Exception\Exception;
@@ -22,13 +20,14 @@ class DefaultController extends Controller {
     const ACCESS_TOKEN_SECRET = 'G7W7YZ9vbruIQ2PL5nWkYWSJizOy9XnfRwoI06Qv93XgZ';
 
     const TWEET_LONG = 280;   // 280 caracteres como máximo por tweet
-    const CACHE_EXPIRE = 300; // 5 minutos
+    const CACHE_EXPIRE = 300; // 5 minutos para que expire la caché
+
 
     /*
      * método privado que crea un array con la información que se desea devolver:
-     * NOTA: en teoŕía los retweets y los likes se deberían poder obtener directamente del primer nivel de datos, pero finalmente
-     * se obtiene dicha información de un segundo nivel llamado 'retweeted_status' ya que desde user no se puede recoger 
-     * la cantidad real.
+     * NOTA: en teoŕía los retweets y los likes se deberían poder obtener directamente del primer nivel de datos, pero 
+     * finalmente se obtiene dicha información de un segundo nivel llamado 'retweeted_status' ya que desde user no se ha 
+     * podido obtener la cantidad real
      */
     private function formatear_tweet($array_bruto) {
         return [
@@ -41,21 +40,61 @@ class DefaultController extends Controller {
         ];
     }
 
+
     /**
-     * Servicio que crea busca el tweet idenficado con el id "id" del usuario "usuario"
-     * @Route("/", name="homeroot")
+     * Servicio de autenticación inicial del usuario. Crea y devuelve el token al usuario
+     * @Route("/", name="homeroot")     
+     * @Route("/api/login_check", name="login")
      */
-    public function raizAction(Request $request) {
-        return $this->render('base.html.twig');
+    public function loginAction(Request $request) {
+
+        try {                
+
+            // obtenemos el usuario 
+            $user = $this->get('security.token_storage')->getToken()->getUser();
+
+            // creamos el token con el nombre de usuario y tiempo de expiración de 1 hora
+            $token = $this->get('lexik_jwt_authentication.encoder')->encode([
+                'username' => $user->getUsername(),
+                'exp' => time() + 3600 // 1 hour expiration
+            ]);
+
+            // si no se ha podido crear el token es porque ha fallado la autenticación
+            if (!$token) throw new Exception ('ERROR: No es posible autentificar', 1);            
+
+            // se informará del estado exitoso
+            $array = ['status' => 'ok'];
+
+            // se crea la respuesta json
+            $response = new JsonResponse($array, 200);        
+
+            // se añade a la cabecera del response el token de autorización
+            $response->headers->set('Authorization', 'Bearer '.$token);
+
+            // devolvemos el response
+            return $response;
+
+        } catch (Exception $e) {
+            $array = ['status' => 'ERROR','errors' => $e->getMessage(),];
+            return new JsonResponse($array, 200);
+        }               
     }
 
+
     /**
-     * Servicio que crea busca el tweet idenficado con el id "id" del usuario "usuario"
-     * @Route("/{usuario}/:{id}", name="tweet_buscar")
+     * Servicio que busca el tweet idenficado con el id "id" del usuario "usuario"
+     * @Route("api/buscar/{usuario}/{id}", name="tweet_buscar")
      */
-    public function getTweet(Request $request, $usuario, $id) {
+    public function getTweetAction(Request $request, $usuario, $id) {
 
         try {
+
+            // obtenemos el token de autorización
+            $token = str_replace('Bearer ', '', $request->headers->get('Authorization'));
+
+            // comprobamos la autorización
+            $data = $this->get('lexik_jwt_authentication.encoder')->decode($token);
+
             // Conectamos al api de twitter
             $connection = new TwitterOAuth($this::CONSUMER_KEY, $this::CONSUMER_SECRET, $this::ACCESS_TOKEN, $this::ACCESS_TOKEN_SECRET);
 
@@ -70,18 +109,15 @@ class DefaultController extends Controller {
 
             // si twitter devuelve errores es que no se ha podido eliminar el tweet
             if (isset($array_bruto['errors'])) throw new Exception ('ERROR: No se ha podido encontrar el tweet', 2);            
-
             // la información recibida la estructuramos para devolver sólo lo deseado
             $array = $this->formatear_tweet($array_bruto);
 
             // la información estructurada la codificacmos en json para ser devuelta
             $response = new JsonResponse($array, 200);
 
-            // configuramos las cabeceras de la respuesta
-            $response->headers->set('Access-Control-Allow-Origin', '*');
-            $response->headers->set('Access-Control-Allow-Methods', 'GET, HEAD');
-            $response->headers->set('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-            $response->headers->addCacheControlDirective('must-revalidate', true);
+            // configuramos las cabeceras de la respuesta para añadir el token
+            $response->headers->set('Access-Control-Allow-Headers', 'Authorization');
+            $response->headers->set('Authorization', 'Bearer '.$token);
 
             // Configuramos la respuesta (response) para almacenarla en cache
             $response->setPublic();
@@ -99,17 +135,24 @@ class DefaultController extends Controller {
 
 
    /**
-     * Implementamos aquí dos servicios:
+     * Implementamos aquí dos servicios en uno:
      *
      * Servicio que devuelve todos los tweets del usuario "usuario"
-     * @Route("/{usuario}", name="tweets_buscar")
+     * @Route("api/buscar/{usuario}", name="tweets_buscar")
      *
-     * Servicio que devuelve los "n" últimos tweets del usuario "usuario"
-     * @Route("/{usuario}/{n}", name="tweets_buscar_n")
+     * Servicio que devuelve los "N" últimos tweets del usuario "usuario"
+     * @Route("api/buscar/N/{usuario}/{n}", name="tweets_buscar_n")
      */   
-    public function getTweets(Request $request, $usuario, $n = 0) {
+    public function getTweetsAction(Request $request, $usuario, $n = 0) {
 
         try {
+  
+            // obtenemos el token de autorización
+            $token = str_replace('Bearer ', '', $request->headers->get('Authorization'));
+
+            // comprobamos si el token es correcto
+            $data = $this->get('lexik_jwt_authentication.encoder')->decode($token);
+
             // Conectamos al api de twitter
             $connection = new TwitterOAuth($this::CONSUMER_KEY, $this::CONSUMER_SECRET, $this::ACCESS_TOKEN, $this::ACCESS_TOKEN_SECRET);
 
@@ -132,11 +175,9 @@ class DefaultController extends Controller {
             // la información estructurada la codificacmos en json para ser devuelta
             $response = new JsonResponse($array, 200);
 
-            // configuramos las cabeceras de la respuesta
-            $response->headers->set('Access-Control-Allow-Origin', '*');
-            $response->headers->set('Access-Control-Allow-Methods', 'GET, HEAD');
-            $response->headers->set('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-            $response->headers->addCacheControlDirective('must-revalidate', true);
+            // configuramos las cabeceras de la respuesta para añadir el token
+            $response->headers->set('Access-Control-Allow-Headers', 'Authorization');
+            $response->headers->set('Authorization', 'Bearer '.$token);
 
             // Configuramos la respuesta (response) para almacenarla en cache
             $response->setPublic();
@@ -148,22 +189,25 @@ class DefaultController extends Controller {
 
         } catch (Exception $e) {
             $array = ['status' => 'ERROR','errors' => $e->getMessage(),];
-            return new JsonResponse($array, 200);
+            return new JsonResponse($array, 404);
         }         
 
     }
 
 
    /**
-     * Servicio que crea un tweet para el usuario "usuario" con el mensaje "texto" siempre que el token de seguridad "token" coincida
-     * @Route("/{usuario}/{token}/{texto}", name="tweet_crear")
+     * Servicio que crea un tweet para el usuario "usuario" con el mensaje "texto". Sólo usuarios ROLE_ADMIN
+     * @Route("api/enviar/{usuario}/{texto}", name="tweet_crear")
      */
-    public function setTweet(Request $request, $usuario, $token, $texto) {
+    public function setTweetAction(Request $request, $usuario, $texto) {
 
         try {
 
-            // Comprobar la coincidencia de tokens de seguridad
-            if ($token != $this::ACCESS_TOKEN_SECRET) throw new Exception ('ERROR: permiso denegado', 2);
+            // obtenemos el token de autorización
+            $token = str_replace('Bearer ', '', $request->headers->get('Authorization'));
+
+            // comprobamos si el token es correcto
+            $data = $this->get('lexik_jwt_authentication.encoder')->decode($token);
 
             // Comprobando que la longitud del texto no supera los 280 caracteres
             if (mb_strlen($texto) > $this::TWEET_LONG) throw new Exception("ERROR: el texto ha superado los ".$this::TWEET_LONG.' caracteres', 3);           
@@ -186,11 +230,9 @@ class DefaultController extends Controller {
             // la información estructurada la codificacmos en json para ser devuelta
             $response = new JsonResponse($array, 200);
 
-            // configuramos las cabeceras de la respuesta
-            $response->headers->set('Access-Control-Allow-Origin', '*');
-            $response->headers->set('Access-Control-Allow-Methods', 'POST, PUT, HEAD');
-            $response->headers->set('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-            $response->headers->addCacheControlDirective('must-revalidate', true);
+            // configuramos las cabeceras de la respuesta para añadir el token
+            $response->headers->set('Access-Control-Allow-Headers', 'Authorization');
+            $response->headers->set('Authorization', 'Bearer '.$token);
 
             // Devolvemos el response
             return $response;
@@ -203,15 +245,18 @@ class DefaultController extends Controller {
 
 
     /**
-     * Servicio que elimina un tweet del usuario "usuario" con el id "id" siempre que el token de seguridad "token" coincida
-     * @Route("/{usuario}/{token}/eliminar/:{id}", name="tweet_eliminar")
+     * Servicio que elimina un tweet del usuario "usuario" con el id "id" solo usuario con el rol ROLE_ADMIN
+     * @Route("api/eliminar/{usuario}/{id}", name="tweet_eliminar")
      */
-    public function delTweet(Request $request, $usuario, $token, $id) {
+    public function delTweetAction(Request $request, $usuario, $id) {
 
         try {
 
-            // Comprobar la coincidencia de tokens de seguridad
-            if ($token != $this::ACCESS_TOKEN_SECRET) throw new Exception ('ERROR: permiso denegado', 2);
+            // obtenemos el token de autorización
+            $token = str_replace('Bearer ', '', $request->headers->get('Authorization'));
+
+            // comprobamos si el token es correcto
+            $data = $this->get('lexik_jwt_authentication.encoder')->decode($token);
 
             // Conectamos al api de twitter
             $connection = new TwitterOAuth($this::CONSUMER_KEY, $this::CONSUMER_SECRET, $this::ACCESS_TOKEN, $this::ACCESS_TOKEN_SECRET);
@@ -234,11 +279,9 @@ class DefaultController extends Controller {
             // la información estructurada la codificacmos en json para ser devuelta
             $response = new JsonResponse($array, 200);
 
-            // configuramos las cabeceras de la respuesta
-            $response->headers->set('Access-Control-Allow-Origin', '*');
-            $response->headers->set('Access-Control-Allow-Methods', 'POST, DELETE, HEAD');
-            $response->headers->set('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-            $response->headers->addCacheControlDirective('must-revalidate', true);
+            // configuramos las cabeceras de la respuesta para añadir el token
+            $response->headers->set('Access-Control-Allow-Headers', 'Authorization');
+            $response->headers->set('Authorization', 'Bearer '.$token);
 
             // Devolvemos el response
             return $response;

@@ -3,9 +3,21 @@
 security:
 
     # https://symfony.com/doc/current/security.html#b-configuring-how-users-are-loaded
+    # configuración de los dos usuarios únicos 
     providers:
         in_memory:
-            memory: ~
+            memory:
+                users:
+                    estandar:
+                        password: %password_estandar%
+                        roles: 'ROLE_USER'
+                    admin:
+                        password: %password_admin%
+                        roles: 'ROLE_ADMIN'            
+
+    # codificación en texto plano
+    encoders:
+        Symfony\Component\Security\Core\User\User: plaintext
 
     firewalls:
         # disables authentication for assets and the profiler, adapt it according to your needs
@@ -18,7 +30,36 @@ security:
             # activate different ways to authenticate
 
             # https://symfony.com/doc/current/security.html#a-configuring-how-your-users-will-authenticate
-            #http_basic: ~
+            http_basic: ~
 
             # https://symfony.com/doc/current/security/form_login_setup.html
             #form_login: ~
+
+        # manejador de los errores y aciertos del bundle de autenticación JWT
+        login:
+            pattern:  ^/api/login
+            stateless: true
+            anonymous: true
+            form_login:
+                check_path:               /api/login_check
+                success_handler:          lexik_jwt_authentication.handler.authentication_success
+                failure_handler:          lexik_jwt_authentication.handler.authentication_failure
+                require_previous_session: false
+
+        api:
+            pattern:   ^/api
+            stateless: true
+            guard:
+                authenticators:
+                    - lexik_jwt_authentication.jwt_token_authenticator
+
+    # definición de las rutas de acceso
+    access_control:
+        - { path: ^/api/login, roles: IS_AUTHENTICATED_ANONYMOUSLY }
+        - { path: ^/api/buscar,       roles: ROLE_USER }
+        - { path: ^/api/enviar,       roles: ROLE_ADMIN }
+        - { path: ^/api/eliminar,       roles: ROLE_ADMIN }
+
+    # definición de la jerarquia de roles. ROLE_ADMIN incluye los permisos de ROLE_USER
+    role_hierarchy:
+        ROLE_ADMIN: ROLE_USER
