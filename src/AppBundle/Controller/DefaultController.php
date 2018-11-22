@@ -12,14 +12,8 @@ use Symfony\Component\Routing\Annotation\Route;
 class DefaultController extends Controller {
 
     // Definición de constantes:
-
-    // clave de autenticación y token de acceso
-    const CONSUMER_KEY = 'Rl759vUc61HuoCVzHdF3R9tWS';
-    const ACCESS_TOKEN = '1366752835-mjsStkwnkGwBoqAStjhQKBiK758aeJbonJyZ8Uz';
-
     const TWEET_LONG = 280;   // 280 caracteres como máximo por tweet
     const CACHE_EXPIRE = 300; // 5 minutos para que expire la caché
-
 
     /*
      * método privado que crea un array con la información que se desea devolver:
@@ -95,8 +89,8 @@ class DefaultController extends Controller {
 
             // Conectamos al api de twitter
             $connection = new TwitterOAuth(
-                $this::CONSUMER_KEY, $this->getParameter('consumer_key_secret'), 
-                $this::ACCESS_TOKEN, $this->getParameter('access_token_secret')
+                $this->getParameter('consumer_key'), $this->getParameter('consumer_key_secret'), 
+                $this->getParameter('access_token'), $this->getParameter('access_token_secret')
             );
 
             // Solicitamos el tweet del usuario "usuario" cuyo id es "id"
@@ -156,8 +150,8 @@ class DefaultController extends Controller {
 
             // Conectamos al api de twitter
             $connection = new TwitterOAuth(
-                $this::CONSUMER_KEY, $this->getParameter('consumer_key_secret'), 
-                $this::ACCESS_TOKEN, $this->getParameter('access_token_secret')
+                $this->getParameter('consumer_key'), $this->getParameter('consumer_key_secret'), 
+                $this->getParameter('access_token'), $this->getParameter('access_token_secret')
             );
 
             // Solicitamos todos los tweets del usuario "usuario"
@@ -218,8 +212,8 @@ class DefaultController extends Controller {
 
             // Conectamos al api de twitter
             $connection = new TwitterOAuth(
-                $this::CONSUMER_KEY, $this->getParameter('consumer_key_secret'), 
-                $this::ACCESS_TOKEN, $this->getParameter('access_token_secret')
+                $this->getParameter('consumer_key'), $this->getParameter('consumer_key_secret'), 
+                $this->getParameter('access_token'), $this->getParameter('access_token_secret')
             );
 
             // Solicitamos la creación de un nuevo tweet para el usuario
@@ -267,8 +261,8 @@ class DefaultController extends Controller {
 
             // Conectamos al api de twitter
             $connection = new TwitterOAuth(
-                $this::CONSUMER_KEY, $this->getParameter('consumer_key_secret'), 
-                $this::ACCESS_TOKEN, $this->getParameter('access_token_secret')
+                $this->getParameter('consumer_key'), $this->getParameter('consumer_key_secret'), 
+                $this->getParameter('access_token'), $this->getParameter('access_token_secret')
             );
 
             // Solicitamos la eliminación de un tweet del usuario

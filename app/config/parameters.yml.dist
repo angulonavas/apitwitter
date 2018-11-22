@@ -10,7 +10,9 @@ parameters:
     jwt_key_pass_phrase: null
     jwt_token_ttl: 3600
 
+    consumer_key: null
     consumer_secret: null
+    access_token: null
     access_token_secret: null
 
     database_host: 127.0.0.1
