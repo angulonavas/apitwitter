@@ -2,18 +2,32 @@
 # Set parameters here that may be different on each deployment target of the app, e.g. development, staging, production.
 # https://symfony.com/doc/current/best_practices/configuration.html#infrastructure-related-configuration
 parameters:
+    password_estandar: null
+    password_admin: null
+
+    jwt_private_key_path: '%kernel.project_dir%/config/jwt/private.pem'
+    jwt_public_key_path: '%kernel.project_dir%/config/jwt/public.pem'
+    jwt_key_pass_phrase: null
+    jwt_token_ttl: 3600
+
+    consumer_secret: null
+    access_token_secret: null
+
     database_host: 127.0.0.1
-    database_port: ~
+    database_port: null
     database_name: symfony
     database_user: root
-    database_password: ~
-    # You should uncomment this if you want to use pdo_sqlite
-    #database_path: '%kernel.project_dir%/var/data/data.sqlite'
+    database_password: null
 
     mailer_transport: smtp
     mailer_host: 127.0.0.1
-    mailer_user: ~
-    mailer_password: ~
+    mailer_user: null
+    mailer_password: null
+    secret: 42d22e518b358334cc1fec0c9d5ba7ccc3083dfc
+
+    # You should uncomment this if you want to use pdo_sqlite
+    #database_path: '%kernel.project_dir%/var/data/data.sqlite'
 
     # A secret key that's used to generate certain security-related tokens
     secret: ThisTokenIsNotSoSecretChangeIt
+

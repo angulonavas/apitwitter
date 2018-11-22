@@ -15,9 +15,7 @@ class DefaultController extends Controller {
 
     // clave de autenticación y token de acceso
     const CONSUMER_KEY = 'Rl759vUc61HuoCVzHdF3R9tWS';
-    const CONSUMER_SECRET = 'TCmU55VRlXD4jZ5tRT4EyBrqqGPItypnnGWvhjuzRPzAw31ay8';
     const ACCESS_TOKEN = '1366752835-mjsStkwnkGwBoqAStjhQKBiK758aeJbonJyZ8Uz';
-    const ACCESS_TOKEN_SECRET = 'G7W7YZ9vbruIQ2PL5nWkYWSJizOy9XnfRwoI06Qv93XgZ';
 
     const TWEET_LONG = 280;   // 280 caracteres como máximo por tweet
     const CACHE_EXPIRE = 300; // 5 minutos para que expire la caché
@@ -96,7 +94,10 @@ class DefaultController extends Controller {
             $data = $this->get('lexik_jwt_authentication.encoder')->decode($token);
 
             // Conectamos al api de twitter
-            $connection = new TwitterOAuth($this::CONSUMER_KEY, $this::CONSUMER_SECRET, $this::ACCESS_TOKEN, $this::ACCESS_TOKEN_SECRET);
+            $connection = new TwitterOAuth(
+                $this::CONSUMER_KEY, $this->getParameter('consumer_key_secret'), 
+                $this::ACCESS_TOKEN, $this->getParameter('access_token_secret')
+            );
 
             // Solicitamos el tweet del usuario "usuario" cuyo id es "id"
             $tweet = $connection->get("statuses/show", ['id' => $id]);
@@ -154,7 +155,10 @@ class DefaultController extends Controller {
             $data = $this->get('lexik_jwt_authentication.encoder')->decode($token);
 
             // Conectamos al api de twitter
-            $connection = new TwitterOAuth($this::CONSUMER_KEY, $this::CONSUMER_SECRET, $this::ACCESS_TOKEN, $this::ACCESS_TOKEN_SECRET);
+            $connection = new TwitterOAuth(
+                $this::CONSUMER_KEY, $this->getParameter('consumer_key_secret'), 
+                $this::ACCESS_TOKEN, $this->getParameter('access_token_secret')
+            );
 
             // Solicitamos todos los tweets del usuario "usuario"
             $tweets = $connection->get("statuses/user_timeline", ['screen_name' => $usuario, 'count' => $n]);
@@ -213,7 +217,10 @@ class DefaultController extends Controller {
             if (mb_strlen($texto) > $this::TWEET_LONG) throw new Exception("ERROR: el texto ha superado los ".$this::TWEET_LONG.' caracteres', 3);           
 
             // Conectamos al api de twitter
-            $connection = new TwitterOAuth($this::CONSUMER_KEY, $this::CONSUMER_SECRET, $this::ACCESS_TOKEN, $this::ACCESS_TOKEN_SECRET);
+            $connection = new TwitterOAuth(
+                $this::CONSUMER_KEY, $this->getParameter('consumer_key_secret'), 
+                $this::ACCESS_TOKEN, $this->getParameter('access_token_secret')
+            );
 
             // Solicitamos la creación de un nuevo tweet para el usuario
             $tweet = $connection->post("statuses/update", ['Name' => $usuario, 'status' => $texto]);
@@ -259,7 +266,10 @@ class DefaultController extends Controller {
             $data = $this->get('lexik_jwt_authentication.encoder')->decode($token);
 
             // Conectamos al api de twitter
-            $connection = new TwitterOAuth($this::CONSUMER_KEY, $this::CONSUMER_SECRET, $this::ACCESS_TOKEN, $this::ACCESS_TOKEN_SECRET);
+            $connection = new TwitterOAuth(
+                $this::CONSUMER_KEY, $this->getParameter('consumer_key_secret'), 
+                $this::ACCESS_TOKEN, $this->getParameter('access_token_secret')
+            );
 
             // Solicitamos la eliminación de un tweet del usuario
             $tweet = $connection->post("statuses/destroy", ['id' => $id]);
